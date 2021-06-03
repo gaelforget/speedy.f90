@@ -65,7 +65,7 @@ contains
         real(p), intent(out) :: shf(ix,il,3)  !! Sensible heat flux
         real(p), intent(out) :: evap(ix,il,3) !! Evaporation
         real(p), intent(out) :: slru(ix,il,3) !! Upward flux of long-wave radiation at the surface
-        real(p), intent(out) :: hfluxn(ix,il,2) !! Net downward heat flux
+        real(p), intent(out) :: hfluxn(ix,il,3) !! Net downward heat flux
         real(p), intent(out) :: tsfc(ix,il)   !! Surface temperature
         real(p), intent(out) :: tskin(ix,il)  !! Skin surface temperature
         real(p), intent(out) :: u0(ix,il) !! Near-surface u-wind
@@ -287,12 +287,20 @@ contains
             vstr(:,:,3) = vstr(:,:,2) + fmask*(vstr(:,:,1) - vstr(:,:,2))
             shf(:,:,3)  = shf(:,:,2)  + fmask*(shf(:,:,1)  - shf(:,:,2))
             evap(:,:,3) = evap(:,:,2) + fmask*(evap(:,:,1) - evap(:,:,2))
+            hfluxn(:,:,3) = hfluxn(:,:,2) + fmask*(hfluxn(:,:,1) - hfluxn(:,:,2))
             slru(:,:,3) = slru(:,:,2) + fmask*(slru(:,:,1) - slru(:,:,2))
 
             tsfc  = tsea      + fmask*(stl_am - tsea)
             tskin = tsea      + fmask*(tskin  - tsea)
             t0    = t1(:,:,2) + fmask*(t1(:,:,1) - t1(:,:,2))
         end if
+
+!        do i = 1, ix
+!            do j = 1, il
+!                hfluxn(i,j,3)=(1.0-fmask(i,j))*hfluxn(i,j,2) !just ocean fluxes, but masked
+!            end do
+!        end do
+
     end
 
     ! Compute orographic factor for land surface drag

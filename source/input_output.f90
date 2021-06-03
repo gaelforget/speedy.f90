@@ -97,6 +97,7 @@ contains
         use physical_constants, only: p0, grav
         use date, only: model_datetime, start_datetime
         use spectral, only: spec_to_grid, uvspec
+        use auxiliaries, only: hfluxn, evap
 
         integer, intent(in) :: timestep           !! The time step that is being written
         complex(p), intent(in) :: vor(mx,nx,kx,2)    !! Vorticity
@@ -110,12 +111,13 @@ contains
         real(p), dimension(ix,il,kx)  :: u_grid, v_grid, t_grid, q_grid, phi_grid
         real(p), dimension(ix,il)     :: ps_grid
         real(sp), dimension(ix,il,kx) :: u_out, v_out, t_out, q_out, phi_out
-        real(sp), dimension(ix,il)    :: ps_out
+        real(sp), dimension(ix,il)    :: ps_out, hfluxn_out, evap_out
         character(len=15) :: file_name = 'yyyymmddhhmm.nc'
         character(len=32) :: time_template = 'hours since yyyy-mm-dd hh:mm:0.0'
         integer :: k, ncid
         integer :: timedim, latdim, londim, levdim
         integer :: timevar, latvar, lonvar, levvar, uvar, vvar, tvar, qvar, phivar, psvar
+        integer :: hfluxnvar, evapvar
 
         ! Construct file_name
         write (file_name(1:4),'(i4.4)') model_datetime%year
@@ -171,6 +173,12 @@ contains
         call check(nf90_def_var(ncid, "ps", nf90_real4, (/ londim, latdim, timedim /), psvar))
         call check(nf90_put_att(ncid, psvar, "long_name", "surface_air_pressure"))
         call check(nf90_put_att(ncid, psvar, "units", "Pa"))
+        call check(nf90_def_var(ncid, "hfluxn", nf90_real4, (/ londim, latdim, timedim /), hfluxnvar))
+        call check(nf90_put_att(ncid, hfluxnvar, "long_name", "surface_heat_flux"))
+        call check(nf90_put_att(ncid, hfluxnvar, "units", "W/m2"))
+        call check(nf90_def_var(ncid, "evap", nf90_real4, (/ londim, latdim, timedim /), evapvar))
+        call check(nf90_put_att(ncid, evapvar, "long_name", "evaporation"))
+        call check(nf90_put_att(ncid, evapvar, "units", "g/(m^2 s)"))
 
         call check(nf90_enddef(ncid))
 
@@ -204,6 +212,8 @@ contains
         q_out = real(q_grid*1.0e-3, sp) ! kg/kg
         phi_out = real(phi_grid/grav, sp)   ! m
         ps_out = real(p0*exp(ps_grid), sp)! Pa
+        hfluxn_out = real(hfluxn(:,:,3), sp)
+        evap_out = real(evap(:,:,3), sp)
 
         ! Write prognostic variables to file
         call check(nf90_put_var(ncid, uvar, u_out, (/ 1, 1, 1, 1 /)))
@@ -212,6 +222,8 @@ contains
         call check(nf90_put_var(ncid, qvar, q_out, (/ 1, 1, 1, 1 /)))
         call check(nf90_put_var(ncid, phivar, phi_out, (/ 1, 1, 1, 1 /)))
         call check(nf90_put_var(ncid, psvar, ps_out, (/ 1, 1, 1 /)))
+        call check(nf90_put_var(ncid, hfluxnvar, hfluxn_out, (/ 1, 1, 1 /)))
+        call check(nf90_put_var(ncid, evapvar, evap_out, (/ 1, 1, 1 /)))
 
         call check(nf90_close(ncid))
     end subroutine
